@@ -17,5 +17,6 @@ data class MeetingEntity(
     val summary: String? = null,
     val todos: String? = null, // JSON array
     val keywords: String? = null, // JSON array with annotations
+    val autoStartRecording: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
 )

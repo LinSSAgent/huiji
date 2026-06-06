@@ -1,0 +1,63 @@
+# Built artifacts
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Build output
+build/
+**/build/
+app/build/
+
+# Gradle
+.gradle/
+**/.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+
+# IDE - IntelliJ / Android Studio
+.idea/
+*.iws
+*.iml
+*.ipr
+.navigation/
+captures/
+
+# Local configuration
+local.properties
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Signing keys
+*.jks
+*.keystore
+
+# Log files
+*.log
+
+# Output directories
+output/
+out/
+
+# Kotlin
+*.class
+*.log
+*.ctxt
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Android Profiler
+*.hprof
+
+# Caches
+*.cache
+*.tmp

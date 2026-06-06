@@ -12,6 +12,7 @@ data class Meeting(
     val summary: String? = null,
     val todos: List<TodoItem> = emptyList(),
     val keywords: List<Keyword> = emptyList(),
+    val autoStartRecording: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
 ) {
     val duration: Long?

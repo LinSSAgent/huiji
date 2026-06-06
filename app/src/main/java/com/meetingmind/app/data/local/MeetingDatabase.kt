@@ -14,7 +14,7 @@ import com.meetingmind.app.data.local.entity.TranscriptSegmentEntity
         TranscriptSegmentEntity::class,
         TranscriptFtsEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class MeetingDatabase : RoomDatabase() {

@@ -18,4 +18,5 @@ interface MeetingRepository {
     suspend fun updateSummary(meetingId: Long, summary: String)
     suspend fun updateTodos(meetingId: Long, todosJson: String)
     suspend fun updateKeywords(meetingId: Long, keywordsJson: String)
+    suspend fun updateAutoStartRecording(meetingId: Long, autoStart: Boolean)
 }

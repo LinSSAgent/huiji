@@ -36,6 +36,14 @@ fun MeetingDetailScreen(
     val tabs = listOf("转写", "摘要", "待办", "关键词")
     var showExportMenu by remember { mutableStateOf(false) }
 
+    // Auto-start recording: navigate to recording screen when shouldAutoStartRecording becomes true
+    LaunchedEffect(uiState.shouldAutoStartRecording) {
+        if (uiState.shouldAutoStartRecording) {
+            viewModel.onAutoStartConsumed()
+            onStartRecording()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -161,6 +169,46 @@ fun MeetingDetailScreen(
                             )
                         }
                     }
+
+                    // Auto-start recording toggle (only show for scheduled/completed meetings)
+                    if (meeting.status == MeetingStatus.SCHEDULED ||
+                        meeting.status == MeetingStatus.COMPLETED
+                    ) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider()
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "自动开始录音",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "进入会议后自动开始录音",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = meeting.autoStartRecording,
+                                onCheckedChange = { viewModel.setAutoStartRecording(it) },
+                                thumbContent = {
+                                    if (meeting.autoStartRecording) {
+                                        Icon(
+                                            Icons.Filled.Mic,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                }
+                            )
+                        }
+                    }
                 }
             }
 
@@ -193,9 +241,18 @@ fun MeetingDetailScreen(
                     onEditSegment = viewModel::updateSegmentText,
                     onRenameSpeaker = viewModel::updateSpeakerName
                 )
-                1 -> SummaryTab(summary = meeting.summary)
-                2 -> TodoTab(todos = meeting.todos)
-                3 -> KeywordTab(keywords = meeting.keywords)
+                1 -> SummaryTab(
+                    summary = meeting.summary,
+                    isAiProcessing = uiState.isAiProcessing
+                )
+                2 -> TodoTab(
+                    todos = meeting.todos,
+                    isAiProcessing = uiState.isAiProcessing
+                )
+                3 -> KeywordTab(
+                    keywords = meeting.keywords,
+                    isAiProcessing = uiState.isAiProcessing
+                )
             }
         }
     }
@@ -383,8 +440,14 @@ private fun TranscriptSegmentItem(
 }
 
 @Composable
-private fun SummaryTab(summary: String?) {
-    if (summary.isNullOrBlank()) {
+private fun SummaryTab(summary: String?, isAiProcessing: Boolean = false) {
+    if (isAiProcessing && summary.isNullOrBlank()) {
+        AiProcessingPlaceholder(
+            icon = Icons.Outlined.AutoAwesome,
+            title = "AI 正在分析会议内容…",
+            subtitle = "正在生成摘要，请稍候"
+        )
+    } else if (summary.isNullOrBlank()) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -403,7 +466,7 @@ private fun SummaryTab(summary: String?) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "录音结束后将自动生成",
+                    text = "录音结束后将自动生成，或点击右上角 AI 按钮",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
@@ -413,6 +476,9 @@ private fun SummaryTab(summary: String?) {
         LazyColumn(
             contentPadding = PaddingValues(16.dp)
         ) {
+            if (isAiProcessing) {
+                item { AiProcessingBanner("AI 正在重新分析…") }
+            }
             item {
                 MarkdownContent(
                     markdown = summary,
@@ -424,8 +490,14 @@ private fun SummaryTab(summary: String?) {
 }
 
 @Composable
-private fun TodoTab(todos: List<com.meetingmind.app.domain.model.TodoItem>) {
-    if (todos.isEmpty()) {
+private fun TodoTab(todos: List<com.meetingmind.app.domain.model.TodoItem>, isAiProcessing: Boolean = false) {
+    if (isAiProcessing && todos.isEmpty()) {
+        AiProcessingPlaceholder(
+            icon = Icons.Outlined.Checklist,
+            title = "AI 正在提取待办事项…",
+            subtitle = "录音结束后自动分析"
+        )
+    } else if (todos.isEmpty()) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -490,8 +562,14 @@ private fun TodoTab(todos: List<com.meetingmind.app.domain.model.TodoItem>) {
 }
 
 @Composable
-private fun KeywordTab(keywords: List<com.meetingmind.app.domain.model.Keyword>) {
-    if (keywords.isEmpty()) {
+private fun KeywordTab(keywords: List<com.meetingmind.app.domain.model.Keyword>, isAiProcessing: Boolean = false) {
+    if (isAiProcessing && keywords.isEmpty()) {
+        AiProcessingPlaceholder(
+            icon = Icons.Outlined.Label,
+            title = "AI 正在提取关键词…",
+            subtitle = "录音结束后自动分析"
+        )
+    } else if (keywords.isEmpty()) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -558,6 +636,72 @@ private fun KeywordTab(keywords: List<com.meetingmind.app.domain.model.Keyword>)
 private fun getSpeakerColor(speakerLabel: String): androidx.compose.ui.graphics.Color {
     val index = speakerLabel.hashCode().let { Math.abs(it) } % SpeakerColors.size
     return SpeakerColors[index]
+}
+
+@Composable
+private fun AiProcessingPlaceholder(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String
+) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(36.dp),
+                strokeWidth = 2.5.dp
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Icon(
+                icon,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun AiProcessingBanner(text: String) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(16.dp),
+                strokeWidth = 2.dp
+            )
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
+    }
 }
 
 @Composable

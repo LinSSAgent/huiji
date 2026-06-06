@@ -80,6 +80,10 @@ class MeetingRepositoryImpl @Inject constructor(
         meetingDao.updateKeywords(meetingId, keywordsJson)
     }
 
+    override suspend fun updateAutoStartRecording(meetingId: Long, autoStart: Boolean) {
+        meetingDao.updateAutoStartRecording(meetingId, autoStart)
+    }
+
     private fun MeetingEntity.toDomain(): Meeting {
         val todoList: List<TodoItem> = if (todos != null) {
             try {
@@ -109,6 +113,7 @@ class MeetingRepositoryImpl @Inject constructor(
             summary = summary,
             todos = todoList,
             keywords = keywordList,
+            autoStartRecording = autoStartRecording,
             createdAt = createdAt
         )
     }
@@ -126,6 +131,7 @@ class MeetingRepositoryImpl @Inject constructor(
             summary = summary,
             todos = if (todos.isNotEmpty()) gson.toJson(todos) else null,
             keywords = if (keywords.isNotEmpty()) gson.toJson(keywords) else null,
+            autoStartRecording = autoStartRecording,
             createdAt = createdAt
         )
     }

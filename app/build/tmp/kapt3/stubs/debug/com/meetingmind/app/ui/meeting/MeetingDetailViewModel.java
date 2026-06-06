@@ -6,6 +6,7 @@ import com.google.gson.Gson;
 import com.meetingmind.app.data.local.dao.SpeakerInfo;
 import com.meetingmind.app.data.remote.AiService;
 import com.meetingmind.app.domain.model.Meeting;
+import com.meetingmind.app.domain.model.MeetingStatus;
 import com.meetingmind.app.domain.model.TranscriptSegment;
 import com.meetingmind.app.domain.repository.MeetingRepository;
 import com.meetingmind.app.domain.repository.TranscriptRepository;
@@ -15,7 +16,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel;
 import kotlinx.coroutines.flow.StateFlow;
 import javax.inject.Inject;
 
-@kotlin.Metadata(mv = {1, 9, 0}, k = 1, xi = 48, d1 = {"\u0000^\n\u0002\u0018\u0002\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0002\b\u0002\n\u0002\u0018\u0002\n\u0002\u0018\u0002\n\u0002\b\u0003\n\u0002\u0010\t\n\u0000\n\u0002\u0018\u0002\n\u0002\b\u0003\n\u0002\u0010\u0002\n\u0000\n\u0002\u0010\u000e\n\u0002\b\u000e\b\u0007\u0018\u00002\u00020\u0001B?\b\u0007\u0012\u0006\u0010\u0002\u001a\u00020\u0003\u0012\u0006\u0010\u0004\u001a\u00020\u0005\u0012\u0006\u0010\u0006\u001a\u00020\u0007\u0012\u0006\u0010\b\u001a\u00020\t\u0012\u0006\u0010\n\u001a\u00020\u000b\u0012\u0006\u0010\f\u001a\u00020\r\u0012\u0006\u0010\u000e\u001a\u00020\u000f\u00a2\u0006\u0002\u0010\u0010J\u000e\u0010\u001c\u001a\u00020\u001d2\u0006\u0010\u001e\u001a\u00020\u001fJ\u0010\u0010 \u001a\u00020\u001d2\b\u0010!\u001a\u0004\u0018\u00010\u001fJ\u0006\u0010\"\u001a\u00020\u001dJ\b\u0010#\u001a\u00020\u001dH\u0002J\b\u0010$\u001a\u00020\u001dH\u0002J\b\u0010%\u001a\u00020\u001dH\u0002J\b\u0010&\u001a\u00020\u001dH\u0014J\u0016\u0010\'\u001a\u00020\u001d2\u0006\u0010(\u001a\u00020\u00172\u0006\u0010)\u001a\u00020\u001fJ\u0016\u0010*\u001a\u00020\u001d2\u0006\u0010+\u001a\u00020\u001f2\u0006\u0010,\u001a\u00020\u001fR\u0014\u0010\u0011\u001a\b\u0012\u0004\u0012\u00020\u00130\u0012X\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u000e\u0010\b\u001a\u00020\tX\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u0011\u0010\u000e\u001a\u00020\u000f\u00a2\u0006\b\n\u0000\u001a\u0004\b\u0014\u0010\u0015R\u000e\u0010\f\u001a\u00020\rX\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u000e\u0010\n\u001a\u00020\u000bX\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u000e\u0010\u0016\u001a\u00020\u0017X\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u000e\u0010\u0004\u001a\u00020\u0005X\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u000e\u0010\u0006\u001a\u00020\u0007X\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u0017\u0010\u0018\u001a\b\u0012\u0004\u0012\u00020\u00130\u0019\u00a2\u0006\b\n\u0000\u001a\u0004\b\u001a\u0010\u001b\u00a8\u0006-"}, d2 = {"Lcom/meetingmind/app/ui/meeting/MeetingDetailViewModel;", "Landroidx/lifecycle/ViewModel;", "savedStateHandle", "Landroidx/lifecycle/SavedStateHandle;", "meetingRepository", "Lcom/meetingmind/app/domain/repository/MeetingRepository;", "transcriptRepository", "Lcom/meetingmind/app/domain/repository/TranscriptRepository;", "aiService", "Lcom/meetingmind/app/data/remote/AiService;", "gson", "Lcom/google/gson/Gson;", "documentExporter", "Lcom/meetingmind/app/util/DocumentExporter;", "audioPlayer", "Lcom/meetingmind/app/util/AudioPlayerManager;", "(Landroidx/lifecycle/SavedStateHandle;Lcom/meetingmind/app/domain/repository/MeetingRepository;Lcom/meetingmind/app/domain/repository/TranscriptRepository;Lcom/meetingmind/app/data/remote/AiService;Lcom/google/gson/Gson;Lcom/meetingmind/app/util/DocumentExporter;Lcom/meetingmind/app/util/AudioPlayerManager;)V", "_uiState", "Lkotlinx/coroutines/flow/MutableStateFlow;", "Lcom/meetingmind/app/ui/meeting/MeetingDetailUiState;", "getAudioPlayer", "()Lcom/meetingmind/app/util/AudioPlayerManager;", "meetingId", "", "uiState", "Lkotlinx/coroutines/flow/StateFlow;", "getUiState", "()Lkotlinx/coroutines/flow/StateFlow;", "exportAs", "", "format", "", "filterBySpeaker", "speakerName", "generateAiContent", "loadMeeting", "loadSpeakers", "loadTranscripts", "onCleared", "updateSegmentText", "segmentId", "text", "updateSpeakerName", "label", "name", "app_debug"})
+@kotlin.Metadata(mv = {1, 9, 0}, k = 1, xi = 48, d1 = {"\u0000d\n\u0002\u0018\u0002\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0002\b\u0002\n\u0002\u0018\u0002\n\u0002\u0018\u0002\n\u0002\b\u0003\n\u0002\u0010\u000b\n\u0000\n\u0002\u0010\t\n\u0000\n\u0002\u0018\u0002\n\u0002\b\u0003\n\u0002\u0010\u0002\n\u0000\n\u0002\u0010\u000e\n\u0002\b\u0013\b\u0007\u0018\u00002\u00020\u0001B?\b\u0007\u0012\u0006\u0010\u0002\u001a\u00020\u0003\u0012\u0006\u0010\u0004\u001a\u00020\u0005\u0012\u0006\u0010\u0006\u001a\u00020\u0007\u0012\u0006\u0010\b\u001a\u00020\t\u0012\u0006\u0010\n\u001a\u00020\u000b\u0012\u0006\u0010\f\u001a\u00020\r\u0012\u0006\u0010\u000e\u001a\u00020\u000f\u00a2\u0006\u0002\u0010\u0010J\u000e\u0010\u001e\u001a\u00020\u001f2\u0006\u0010 \u001a\u00020!J\u0010\u0010\"\u001a\u00020\u001f2\b\u0010#\u001a\u0004\u0018\u00010!J\u0006\u0010$\u001a\u00020\u001fJ\b\u0010%\u001a\u00020\u001fH\u0002J\b\u0010&\u001a\u00020\u001fH\u0002J\b\u0010\'\u001a\u00020\u001fH\u0002J\u0006\u0010(\u001a\u00020\u001fJ\b\u0010)\u001a\u00020\u001fH\u0014J\u000e\u0010*\u001a\u00020\u001fH\u0082@\u00a2\u0006\u0002\u0010+J\u000e\u0010,\u001a\u00020\u001f2\u0006\u0010-\u001a\u00020\u0017J\u0016\u0010.\u001a\u00020\u001f2\u0006\u0010/\u001a\u00020\u00192\u0006\u00100\u001a\u00020!J\u0016\u00101\u001a\u00020\u001f2\u0006\u00102\u001a\u00020!2\u0006\u00103\u001a\u00020!R\u0014\u0010\u0011\u001a\b\u0012\u0004\u0012\u00020\u00130\u0012X\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u000e\u0010\b\u001a\u00020\tX\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u0011\u0010\u000e\u001a\u00020\u000f\u00a2\u0006\b\n\u0000\u001a\u0004\b\u0014\u0010\u0015R\u000e\u0010\u0016\u001a\u00020\u0017X\u0082\u000e\u00a2\u0006\u0002\n\u0000R\u000e\u0010\f\u001a\u00020\rX\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u000e\u0010\n\u001a\u00020\u000bX\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u000e\u0010\u0018\u001a\u00020\u0019X\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u000e\u0010\u0004\u001a\u00020\u0005X\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u000e\u0010\u0006\u001a\u00020\u0007X\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u0017\u0010\u001a\u001a\b\u0012\u0004\u0012\u00020\u00130\u001b\u00a2\u0006\b\n\u0000\u001a\u0004\b\u001c\u0010\u001d\u00a8\u00064"}, d2 = {"Lcom/meetingmind/app/ui/meeting/MeetingDetailViewModel;", "Landroidx/lifecycle/ViewModel;", "savedStateHandle", "Landroidx/lifecycle/SavedStateHandle;", "meetingRepository", "Lcom/meetingmind/app/domain/repository/MeetingRepository;", "transcriptRepository", "Lcom/meetingmind/app/domain/repository/TranscriptRepository;", "aiService", "Lcom/meetingmind/app/data/remote/AiService;", "gson", "Lcom/google/gson/Gson;", "documentExporter", "Lcom/meetingmind/app/util/DocumentExporter;", "audioPlayer", "Lcom/meetingmind/app/util/AudioPlayerManager;", "(Landroidx/lifecycle/SavedStateHandle;Lcom/meetingmind/app/domain/repository/MeetingRepository;Lcom/meetingmind/app/domain/repository/TranscriptRepository;Lcom/meetingmind/app/data/remote/AiService;Lcom/google/gson/Gson;Lcom/meetingmind/app/util/DocumentExporter;Lcom/meetingmind/app/util/AudioPlayerManager;)V", "_uiState", "Lkotlinx/coroutines/flow/MutableStateFlow;", "Lcom/meetingmind/app/ui/meeting/MeetingDetailUiState;", "getAudioPlayer", "()Lcom/meetingmind/app/util/AudioPlayerManager;", "autoStartTriggered", "", "meetingId", "", "uiState", "Lkotlinx/coroutines/flow/StateFlow;", "getUiState", "()Lkotlinx/coroutines/flow/StateFlow;", "exportAs", "", "format", "", "filterBySpeaker", "speakerName", "generateAiContent", "loadMeeting", "loadSpeakers", "loadTranscripts", "onAutoStartConsumed", "onCleared", "runAiAnalysis", "(Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", "setAutoStartRecording", "enabled", "updateSegmentText", "segmentId", "text", "updateSpeakerName", "label", "name", "app_debug"})
 @dagger.hilt.android.lifecycle.HiltViewModel()
 public final class MeetingDetailViewModel extends androidx.lifecycle.ViewModel {
     @org.jetbrains.annotations.NotNull()
@@ -35,6 +36,7 @@ public final class MeetingDetailViewModel extends androidx.lifecycle.ViewModel {
     private final kotlinx.coroutines.flow.MutableStateFlow<com.meetingmind.app.ui.meeting.MeetingDetailUiState> _uiState = null;
     @org.jetbrains.annotations.NotNull()
     private final kotlinx.coroutines.flow.StateFlow<com.meetingmind.app.ui.meeting.MeetingDetailUiState> uiState = null;
+    private boolean autoStartTriggered = false;
     
     @javax.inject.Inject()
     public MeetingDetailViewModel(@org.jetbrains.annotations.NotNull()
@@ -61,6 +63,15 @@ public final class MeetingDetailViewModel extends androidx.lifecycle.ViewModel {
     private final void loadMeeting() {
     }
     
+    /**
+     * Called by UI after auto-start recording has been consumed (navigation triggered)
+     */
+    public final void onAutoStartConsumed() {
+    }
+    
+    public final void setAutoStartRecording(boolean enabled) {
+    }
+    
     private final void loadTranscripts() {
     }
     
@@ -81,6 +92,17 @@ public final class MeetingDetailViewModel extends androidx.lifecycle.ViewModel {
     }
     
     public final void generateAiContent() {
+    }
+    
+    /**
+     * Run full AI analysis pipeline:
+     * 1. Polish transcript text
+     * 2. Generate summary
+     * 3. Extract todos
+     * 4. Extract keywords
+     */
+    private final java.lang.Object runAiAnalysis(kotlin.coroutines.Continuation<? super kotlin.Unit> $completion) {
+        return null;
     }
     
     public final void exportAs(@org.jetbrains.annotations.NotNull()

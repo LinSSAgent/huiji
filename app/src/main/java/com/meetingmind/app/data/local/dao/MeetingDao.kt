@@ -57,4 +57,7 @@ interface MeetingDao {
 
     @Query("UPDATE meetings SET keywords = :keywords WHERE id = :meetingId")
     suspend fun updateKeywords(meetingId: Long, keywords: String)
+
+    @Query("UPDATE meetings SET autoStartRecording = :autoStart WHERE id = :meetingId")
+    suspend fun updateAutoStartRecording(meetingId: Long, autoStart: Boolean)
 }

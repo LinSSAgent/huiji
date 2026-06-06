@@ -18,6 +18,55 @@ class AiService @Inject constructor(
     }
 
     /**
+     * Polish raw transcript text to improve readability.
+     * Returns a map of segment ID -> polished text.
+     */
+    suspend fun polishTranscript(segments: List<TranscriptSegment>): Map<Long, String> {
+        if (segments.isEmpty()) return emptyMap()
+
+        val rawText = formatTranscript(segments)
+        if (rawText.isBlank()) return emptyMap()
+
+        val prompt = """你是一个专业的会议纪要文字整理助手。请对以下语音转写结果进行文字润色，要求：
+
+1. 修正明显的语音识别错误（如"嗯好那个"→"好的"）
+2. 去除口头禅和重复词（如"然后然后"→"然后"）
+3. 补全缺失的标点符号，使语句流畅
+4. 保持原始语义不变，不增删信息
+5. 保持每段文本的独立性（每段是一个独立的发言）
+6. 输出格式：每行对应一段，格式为「行号: 润色后的文本」（行号从1开始）
+
+原始转写内容（共${segments.size}段）：
+${segments.mapIndexed { i, seg -> "${i + 1}. ${seg.text}" }.joinToString("\n")}
+
+请直接输出润色后的内容："""
+
+        val result = callQwen(prompt) ?: return emptyMap()
+        return parsePolishedResult(result, segments)
+    }
+
+    /**
+     * Parse the polished transcript result from AI.
+     * Expects lines like "1: 润色后的文本" or "1. 润色后的文本"
+     */
+    private fun parsePolishedResult(result: String, originalSegments: List<TranscriptSegment>): Map<Long, String> {
+        val resultMap = mutableMapOf<Long, String>()
+        val lines = result.lines()
+        val linePattern = Regex("^(\\d+)[:.)]\\s*(.+)$")
+
+        for (line in lines) {
+            val match = linePattern.find(line.trim()) ?: continue
+            val index = match.groupValues[1].toIntOrNull() ?: continue
+            val text = match.groupValues[2].trim()
+            if (index in 1..originalSegments.size && text.isNotBlank()) {
+                val segmentId = originalSegments[index - 1].id
+                resultMap[segmentId] = text
+            }
+        }
+        return resultMap
+    }
+
+    /**
      * Generate meeting summary from transcript segments
      */
     suspend fun generateSummary(segments: List<TranscriptSegment>): String? {

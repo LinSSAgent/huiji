@@ -8,6 +8,7 @@ import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.IBinder
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.*
@@ -119,6 +120,11 @@ fun RecordingScreen(
     val liveTranscripts = service?.liveTranscripts?.collectAsStateWithLifecycle()?.value ?: emptyList()
     val duration = service?.recordingDuration?.collectAsStateWithLifecycle()?.value ?: 0L
 
+    // Intercept system back button/gesture to prevent accidental recording stop
+    BackHandler(enabled = isRecording) {
+        showStopDialog = true
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -184,20 +190,23 @@ fun RecordingScreen(
     if (showStopDialog) {
         AlertDialog(
             onDismissRequest = { showStopDialog = false },
-            title = { Text("停止录音") },
-            text = { Text("确定要停止录音并返回吗？") },
+            title = { Text("停止录音？") },
+            text = { Text("选择「停止录音」将结束录音并返回；选择「最小化」录音将在后台继续运行。") },
             confirmButton = {
                 TextButton(onClick = {
                     service?.stopRecording()
                     showStopDialog = false
                     onNavigateBack()
                 }) {
-                    Text("停止并返回")
+                    Text("停止录音")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showStopDialog = false }) {
-                    Text("继续录音")
+                TextButton(onClick = {
+                    showStopDialog = false
+                    onNavigateBack()  // Navigate back but keep recording running in background
+                }) {
+                    Text("最小化")
                 }
             }
         )

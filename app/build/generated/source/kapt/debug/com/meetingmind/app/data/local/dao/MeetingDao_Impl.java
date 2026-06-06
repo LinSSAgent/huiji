@@ -57,13 +57,15 @@ public final class MeetingDao_Impl implements MeetingDao {
 
   private final SharedSQLiteStatement __preparedStmtOfUpdateKeywords;
 
+  private final SharedSQLiteStatement __preparedStmtOfUpdateAutoStartRecording;
+
   public MeetingDao_Impl(@NonNull final RoomDatabase __db) {
     this.__db = __db;
     this.__insertionAdapterOfMeetingEntity = new EntityInsertionAdapter<MeetingEntity>(__db) {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `meetings` (`id`,`title`,`description`,`scheduledTime`,`startTime`,`endTime`,`status`,`audioFilePath`,`summary`,`todos`,`keywords`,`createdAt`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?,?)";
+        return "INSERT OR REPLACE INTO `meetings` (`id`,`title`,`description`,`scheduledTime`,`startTime`,`endTime`,`status`,`audioFilePath`,`summary`,`todos`,`keywords`,`autoStartRecording`,`createdAt`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -120,7 +122,9 @@ public final class MeetingDao_Impl implements MeetingDao {
         } else {
           statement.bindString(11, entity.getKeywords());
         }
-        statement.bindLong(12, entity.getCreatedAt());
+        final int _tmp = entity.getAutoStartRecording() ? 1 : 0;
+        statement.bindLong(12, _tmp);
+        statement.bindLong(13, entity.getCreatedAt());
       }
     };
     this.__deletionAdapterOfMeetingEntity = new EntityDeletionOrUpdateAdapter<MeetingEntity>(__db) {
@@ -140,7 +144,7 @@ public final class MeetingDao_Impl implements MeetingDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "UPDATE OR ABORT `meetings` SET `id` = ?,`title` = ?,`description` = ?,`scheduledTime` = ?,`startTime` = ?,`endTime` = ?,`status` = ?,`audioFilePath` = ?,`summary` = ?,`todos` = ?,`keywords` = ?,`createdAt` = ? WHERE `id` = ?";
+        return "UPDATE OR ABORT `meetings` SET `id` = ?,`title` = ?,`description` = ?,`scheduledTime` = ?,`startTime` = ?,`endTime` = ?,`status` = ?,`audioFilePath` = ?,`summary` = ?,`todos` = ?,`keywords` = ?,`autoStartRecording` = ?,`createdAt` = ? WHERE `id` = ?";
       }
 
       @Override
@@ -197,8 +201,10 @@ public final class MeetingDao_Impl implements MeetingDao {
         } else {
           statement.bindString(11, entity.getKeywords());
         }
-        statement.bindLong(12, entity.getCreatedAt());
-        statement.bindLong(13, entity.getId());
+        final int _tmp = entity.getAutoStartRecording() ? 1 : 0;
+        statement.bindLong(12, _tmp);
+        statement.bindLong(13, entity.getCreatedAt());
+        statement.bindLong(14, entity.getId());
       }
     };
     this.__preparedStmtOfDeleteMeetingById = new SharedSQLiteStatement(__db) {
@@ -262,6 +268,14 @@ public final class MeetingDao_Impl implements MeetingDao {
       @NonNull
       public String createQuery() {
         final String _query = "UPDATE meetings SET keywords = ? WHERE id = ?";
+        return _query;
+      }
+    };
+    this.__preparedStmtOfUpdateAutoStartRecording = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "UPDATE meetings SET autoStartRecording = ? WHERE id = ?";
         return _query;
       }
     };
@@ -567,6 +581,35 @@ public final class MeetingDao_Impl implements MeetingDao {
   }
 
   @Override
+  public Object updateAutoStartRecording(final long meetingId, final boolean autoStart,
+      final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfUpdateAutoStartRecording.acquire();
+        int _argIndex = 1;
+        final int _tmp = autoStart ? 1 : 0;
+        _stmt.bindLong(_argIndex, _tmp);
+        _argIndex = 2;
+        _stmt.bindLong(_argIndex, meetingId);
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfUpdateAutoStartRecording.release(_stmt);
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
   public Flow<List<MeetingEntity>> getAllMeetings() {
     final String _sql = "SELECT * FROM meetings ORDER BY createdAt DESC";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
@@ -587,6 +630,7 @@ public final class MeetingDao_Impl implements MeetingDao {
           final int _cursorIndexOfSummary = CursorUtil.getColumnIndexOrThrow(_cursor, "summary");
           final int _cursorIndexOfTodos = CursorUtil.getColumnIndexOrThrow(_cursor, "todos");
           final int _cursorIndexOfKeywords = CursorUtil.getColumnIndexOrThrow(_cursor, "keywords");
+          final int _cursorIndexOfAutoStartRecording = CursorUtil.getColumnIndexOrThrow(_cursor, "autoStartRecording");
           final int _cursorIndexOfCreatedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "createdAt");
           final List<MeetingEntity> _result = new ArrayList<MeetingEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
@@ -653,9 +697,13 @@ public final class MeetingDao_Impl implements MeetingDao {
             } else {
               _tmpKeywords = _cursor.getString(_cursorIndexOfKeywords);
             }
+            final boolean _tmpAutoStartRecording;
+            final int _tmp;
+            _tmp = _cursor.getInt(_cursorIndexOfAutoStartRecording);
+            _tmpAutoStartRecording = _tmp != 0;
             final long _tmpCreatedAt;
             _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt);
-            _item = new MeetingEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpScheduledTime,_tmpStartTime,_tmpEndTime,_tmpStatus,_tmpAudioFilePath,_tmpSummary,_tmpTodos,_tmpKeywords,_tmpCreatedAt);
+            _item = new MeetingEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpScheduledTime,_tmpStartTime,_tmpEndTime,_tmpStatus,_tmpAudioFilePath,_tmpSummary,_tmpTodos,_tmpKeywords,_tmpAutoStartRecording,_tmpCreatedAt);
             _result.add(_item);
           }
           return _result;
@@ -696,6 +744,7 @@ public final class MeetingDao_Impl implements MeetingDao {
           final int _cursorIndexOfSummary = CursorUtil.getColumnIndexOrThrow(_cursor, "summary");
           final int _cursorIndexOfTodos = CursorUtil.getColumnIndexOrThrow(_cursor, "todos");
           final int _cursorIndexOfKeywords = CursorUtil.getColumnIndexOrThrow(_cursor, "keywords");
+          final int _cursorIndexOfAutoStartRecording = CursorUtil.getColumnIndexOrThrow(_cursor, "autoStartRecording");
           final int _cursorIndexOfCreatedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "createdAt");
           final MeetingEntity _result;
           if (_cursor.moveToFirst()) {
@@ -761,9 +810,13 @@ public final class MeetingDao_Impl implements MeetingDao {
             } else {
               _tmpKeywords = _cursor.getString(_cursorIndexOfKeywords);
             }
+            final boolean _tmpAutoStartRecording;
+            final int _tmp;
+            _tmp = _cursor.getInt(_cursorIndexOfAutoStartRecording);
+            _tmpAutoStartRecording = _tmp != 0;
             final long _tmpCreatedAt;
             _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt);
-            _result = new MeetingEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpScheduledTime,_tmpStartTime,_tmpEndTime,_tmpStatus,_tmpAudioFilePath,_tmpSummary,_tmpTodos,_tmpKeywords,_tmpCreatedAt);
+            _result = new MeetingEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpScheduledTime,_tmpStartTime,_tmpEndTime,_tmpStatus,_tmpAudioFilePath,_tmpSummary,_tmpTodos,_tmpKeywords,_tmpAutoStartRecording,_tmpCreatedAt);
           } else {
             _result = null;
           }
@@ -799,6 +852,7 @@ public final class MeetingDao_Impl implements MeetingDao {
           final int _cursorIndexOfSummary = CursorUtil.getColumnIndexOrThrow(_cursor, "summary");
           final int _cursorIndexOfTodos = CursorUtil.getColumnIndexOrThrow(_cursor, "todos");
           final int _cursorIndexOfKeywords = CursorUtil.getColumnIndexOrThrow(_cursor, "keywords");
+          final int _cursorIndexOfAutoStartRecording = CursorUtil.getColumnIndexOrThrow(_cursor, "autoStartRecording");
           final int _cursorIndexOfCreatedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "createdAt");
           final MeetingEntity _result;
           if (_cursor.moveToFirst()) {
@@ -864,9 +918,13 @@ public final class MeetingDao_Impl implements MeetingDao {
             } else {
               _tmpKeywords = _cursor.getString(_cursorIndexOfKeywords);
             }
+            final boolean _tmpAutoStartRecording;
+            final int _tmp;
+            _tmp = _cursor.getInt(_cursorIndexOfAutoStartRecording);
+            _tmpAutoStartRecording = _tmp != 0;
             final long _tmpCreatedAt;
             _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt);
-            _result = new MeetingEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpScheduledTime,_tmpStartTime,_tmpEndTime,_tmpStatus,_tmpAudioFilePath,_tmpSummary,_tmpTodos,_tmpKeywords,_tmpCreatedAt);
+            _result = new MeetingEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpScheduledTime,_tmpStartTime,_tmpEndTime,_tmpStatus,_tmpAudioFilePath,_tmpSummary,_tmpTodos,_tmpKeywords,_tmpAutoStartRecording,_tmpCreatedAt);
           } else {
             _result = null;
           }
@@ -910,6 +968,7 @@ public final class MeetingDao_Impl implements MeetingDao {
           final int _cursorIndexOfSummary = CursorUtil.getColumnIndexOrThrow(_cursor, "summary");
           final int _cursorIndexOfTodos = CursorUtil.getColumnIndexOrThrow(_cursor, "todos");
           final int _cursorIndexOfKeywords = CursorUtil.getColumnIndexOrThrow(_cursor, "keywords");
+          final int _cursorIndexOfAutoStartRecording = CursorUtil.getColumnIndexOrThrow(_cursor, "autoStartRecording");
           final int _cursorIndexOfCreatedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "createdAt");
           final List<MeetingEntity> _result = new ArrayList<MeetingEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
@@ -976,9 +1035,13 @@ public final class MeetingDao_Impl implements MeetingDao {
             } else {
               _tmpKeywords = _cursor.getString(_cursorIndexOfKeywords);
             }
+            final boolean _tmpAutoStartRecording;
+            final int _tmp;
+            _tmp = _cursor.getInt(_cursorIndexOfAutoStartRecording);
+            _tmpAutoStartRecording = _tmp != 0;
             final long _tmpCreatedAt;
             _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt);
-            _item = new MeetingEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpScheduledTime,_tmpStartTime,_tmpEndTime,_tmpStatus,_tmpAudioFilePath,_tmpSummary,_tmpTodos,_tmpKeywords,_tmpCreatedAt);
+            _item = new MeetingEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpScheduledTime,_tmpStartTime,_tmpEndTime,_tmpStatus,_tmpAudioFilePath,_tmpSummary,_tmpTodos,_tmpKeywords,_tmpAutoStartRecording,_tmpCreatedAt);
             _result.add(_item);
           }
           return _result;
@@ -1015,6 +1078,7 @@ public final class MeetingDao_Impl implements MeetingDao {
           final int _cursorIndexOfSummary = CursorUtil.getColumnIndexOrThrow(_cursor, "summary");
           final int _cursorIndexOfTodos = CursorUtil.getColumnIndexOrThrow(_cursor, "todos");
           final int _cursorIndexOfKeywords = CursorUtil.getColumnIndexOrThrow(_cursor, "keywords");
+          final int _cursorIndexOfAutoStartRecording = CursorUtil.getColumnIndexOrThrow(_cursor, "autoStartRecording");
           final int _cursorIndexOfCreatedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "createdAt");
           final List<MeetingEntity> _result = new ArrayList<MeetingEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
@@ -1081,9 +1145,13 @@ public final class MeetingDao_Impl implements MeetingDao {
             } else {
               _tmpKeywords = _cursor.getString(_cursorIndexOfKeywords);
             }
+            final boolean _tmpAutoStartRecording;
+            final int _tmp;
+            _tmp = _cursor.getInt(_cursorIndexOfAutoStartRecording);
+            _tmpAutoStartRecording = _tmp != 0;
             final long _tmpCreatedAt;
             _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt);
-            _item = new MeetingEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpScheduledTime,_tmpStartTime,_tmpEndTime,_tmpStatus,_tmpAudioFilePath,_tmpSummary,_tmpTodos,_tmpKeywords,_tmpCreatedAt);
+            _item = new MeetingEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpScheduledTime,_tmpStartTime,_tmpEndTime,_tmpStatus,_tmpAudioFilePath,_tmpSummary,_tmpTodos,_tmpKeywords,_tmpAutoStartRecording,_tmpCreatedAt);
             _result.add(_item);
           }
           return _result;
@@ -1132,6 +1200,7 @@ public final class MeetingDao_Impl implements MeetingDao {
           final int _cursorIndexOfSummary = CursorUtil.getColumnIndexOrThrow(_cursor, "summary");
           final int _cursorIndexOfTodos = CursorUtil.getColumnIndexOrThrow(_cursor, "todos");
           final int _cursorIndexOfKeywords = CursorUtil.getColumnIndexOrThrow(_cursor, "keywords");
+          final int _cursorIndexOfAutoStartRecording = CursorUtil.getColumnIndexOrThrow(_cursor, "autoStartRecording");
           final int _cursorIndexOfCreatedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "createdAt");
           final List<MeetingEntity> _result = new ArrayList<MeetingEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
@@ -1198,9 +1267,13 @@ public final class MeetingDao_Impl implements MeetingDao {
             } else {
               _tmpKeywords = _cursor.getString(_cursorIndexOfKeywords);
             }
+            final boolean _tmpAutoStartRecording;
+            final int _tmp;
+            _tmp = _cursor.getInt(_cursorIndexOfAutoStartRecording);
+            _tmpAutoStartRecording = _tmp != 0;
             final long _tmpCreatedAt;
             _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt);
-            _item = new MeetingEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpScheduledTime,_tmpStartTime,_tmpEndTime,_tmpStatus,_tmpAudioFilePath,_tmpSummary,_tmpTodos,_tmpKeywords,_tmpCreatedAt);
+            _item = new MeetingEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpScheduledTime,_tmpStartTime,_tmpEndTime,_tmpStatus,_tmpAudioFilePath,_tmpSummary,_tmpTodos,_tmpKeywords,_tmpAutoStartRecording,_tmpCreatedAt);
             _result.add(_item);
           }
           return _result;

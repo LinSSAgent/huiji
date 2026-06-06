@@ -7,6 +7,7 @@ import com.google.gson.Gson
 import com.meetingmind.app.data.local.dao.SpeakerInfo
 import com.meetingmind.app.data.remote.AiService
 import com.meetingmind.app.domain.model.Meeting
+import com.meetingmind.app.domain.model.MeetingStatus
 import com.meetingmind.app.domain.model.TranscriptSegment
 import com.meetingmind.app.domain.repository.MeetingRepository
 import com.meetingmind.app.domain.repository.TranscriptRepository
@@ -35,6 +36,9 @@ class MeetingDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(MeetingDetailUiState())
     val uiState: StateFlow<MeetingDetailUiState> = _uiState.asStateFlow()
 
+    // Track if we have already triggered auto-start (to prevent re-triggering)
+    private var autoStartTriggered = false
+
     init {
         loadMeeting()
         loadTranscripts()
@@ -44,8 +48,38 @@ class MeetingDetailViewModel @Inject constructor(
     private fun loadMeeting() {
         viewModelScope.launch {
             meetingRepository.getMeetingById(meetingId).collect { meeting ->
+                val wasRecording = _uiState.value.meeting?.status == MeetingStatus.RECORDING
+                val nowRecording = meeting?.status == MeetingStatus.RECORDING
+
                 _uiState.value = _uiState.value.copy(meeting = meeting, isLoading = false)
+
+                // Detect transition from RECORDING -> COMPLETED: trigger AI analysis automatically
+                if (wasRecording && meeting?.status == MeetingStatus.COMPLETED) {
+                    runAiAnalysis()
+                }
+
+                // Detect auto-start recording: meeting loaded with autoStart flag and is SCHEDULED
+                if (!autoStartTriggered && meeting != null &&
+                    meeting.autoStartRecording &&
+                    meeting.status == MeetingStatus.SCHEDULED
+                ) {
+                    autoStartTriggered = true
+                    _uiState.value = _uiState.value.copy(shouldAutoStartRecording = true)
+                }
             }
+        }
+    }
+
+    /**
+     * Called by UI after auto-start recording has been consumed (navigation triggered)
+     */
+    fun onAutoStartConsumed() {
+        _uiState.value = _uiState.value.copy(shouldAutoStartRecording = false)
+    }
+
+    fun setAutoStartRecording(enabled: Boolean) {
+        viewModelScope.launch {
+            meetingRepository.updateAutoStartRecording(meetingId, enabled)
         }
     }
 
@@ -82,32 +116,56 @@ class MeetingDetailViewModel @Inject constructor(
     }
 
     fun generateAiContent() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isAiProcessing = true)
-            val segments = transcriptRepository.getSegmentsByMeetingIdSync(meetingId)
-            if (segments.isEmpty()) {
-                _uiState.value = _uiState.value.copy(isAiProcessing = false)
-                return@launch
-            }
+        viewModelScope.launch { runAiAnalysis() }
+    }
 
-            // Generate summary
-            val summary = aiService.generateSummary(segments)
-            summary?.let { meetingRepository.updateSummary(meetingId, it) }
-
-            // Extract todos
-            val todos = aiService.extractTodos(segments)
-            if (todos.isNotEmpty()) {
-                meetingRepository.updateTodos(meetingId, gson.toJson(todos))
-            }
-
-            // Extract keywords
-            val keywords = aiService.extractKeywords(segments)
-            if (keywords.isNotEmpty()) {
-                meetingRepository.updateKeywords(meetingId, gson.toJson(keywords))
-            }
-
+    /**
+     * Run full AI analysis pipeline:
+     * 1. Polish transcript text
+     * 2. Generate summary
+     * 3. Extract todos
+     * 4. Extract keywords
+     */
+    private suspend fun runAiAnalysis() {
+        _uiState.value = _uiState.value.copy(isAiProcessing = true)
+        val segments = transcriptRepository.getSegmentsByMeetingIdSync(meetingId)
+        if (segments.isEmpty()) {
             _uiState.value = _uiState.value.copy(isAiProcessing = false)
+            return
         }
+
+        // Step 1: Polish transcript text
+        val polishedSegments = aiService.polishTranscript(segments)
+        if (polishedSegments.isNotEmpty()) {
+            polishedSegments.forEach { (id, text) ->
+                transcriptRepository.updateSegmentText(id, text)
+            }
+        }
+
+        // Use polished segments for subsequent AI calls
+        val finalSegments = if (polishedSegments.isNotEmpty()) {
+            segments.map { seg ->
+                polishedSegments[seg.id]?.let { seg.copy(text = it) } ?: seg
+            }
+        } else segments
+
+        // Step 2: Generate summary
+        val summary = aiService.generateSummary(finalSegments)
+        summary?.let { meetingRepository.updateSummary(meetingId, it) }
+
+        // Step 3: Extract todos
+        val todos = aiService.extractTodos(finalSegments)
+        if (todos.isNotEmpty()) {
+            meetingRepository.updateTodos(meetingId, gson.toJson(todos))
+        }
+
+        // Step 4: Extract keywords
+        val keywords = aiService.extractKeywords(finalSegments)
+        if (keywords.isNotEmpty()) {
+            meetingRepository.updateKeywords(meetingId, gson.toJson(keywords))
+        }
+
+        _uiState.value = _uiState.value.copy(isAiProcessing = false)
     }
 
     fun exportAs(format: String) {
@@ -137,7 +195,8 @@ data class MeetingDetailUiState(
     val speakers: List<SpeakerInfo> = emptyList(),
     val selectedSpeakerFilter: String? = null,
     val isLoading: Boolean = true,
-    val isAiProcessing: Boolean = false
+    val isAiProcessing: Boolean = false,
+    val shouldAutoStartRecording: Boolean = false
 ) {
     val filteredSegments: List<TranscriptSegment>
         get() = if (selectedSpeakerFilter != null) {

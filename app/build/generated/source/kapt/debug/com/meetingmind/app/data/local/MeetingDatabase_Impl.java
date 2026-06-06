@@ -39,10 +39,10 @@ public final class MeetingDatabase_Impl extends MeetingDatabase {
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(1) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(2) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS `meetings` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `scheduledTime` INTEGER, `startTime` INTEGER, `endTime` INTEGER, `status` TEXT NOT NULL, `audioFilePath` TEXT, `summary` TEXT, `todos` TEXT, `keywords` TEXT, `createdAt` INTEGER NOT NULL)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `meetings` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `scheduledTime` INTEGER, `startTime` INTEGER, `endTime` INTEGER, `status` TEXT NOT NULL, `audioFilePath` TEXT, `summary` TEXT, `todos` TEXT, `keywords` TEXT, `autoStartRecording` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `transcript_segments` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `meetingId` INTEGER NOT NULL, `speakerLabel` TEXT NOT NULL, `speakerName` TEXT, `text` TEXT NOT NULL, `startTimeMs` INTEGER NOT NULL, `endTimeMs` INTEGER NOT NULL, `isEdited` INTEGER NOT NULL, FOREIGN KEY(`meetingId`) REFERENCES `meetings`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )");
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_transcript_segments_meetingId` ON `transcript_segments` (`meetingId`)");
         db.execSQL("CREATE VIRTUAL TABLE IF NOT EXISTS `transcript_fts` USING FTS4(`text` TEXT NOT NULL, `speakerName` TEXT, content=`transcript_segments`)");
@@ -51,7 +51,7 @@ public final class MeetingDatabase_Impl extends MeetingDatabase {
         db.execSQL("CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_transcript_fts_AFTER_UPDATE AFTER UPDATE ON `transcript_segments` BEGIN INSERT INTO `transcript_fts`(`docid`, `text`, `speakerName`) VALUES (NEW.`rowid`, NEW.`text`, NEW.`speakerName`); END");
         db.execSQL("CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_transcript_fts_AFTER_INSERT AFTER INSERT ON `transcript_segments` BEGIN INSERT INTO `transcript_fts`(`docid`, `text`, `speakerName`) VALUES (NEW.`rowid`, NEW.`text`, NEW.`speakerName`); END");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '52bd2b5f5d630fc6dfd6ce3d395026ee')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '714c25490a7fd427f096734492e552b7')");
       }
 
       @Override
@@ -107,7 +107,7 @@ public final class MeetingDatabase_Impl extends MeetingDatabase {
       @NonNull
       public RoomOpenHelper.ValidationResult onValidateSchema(
           @NonNull final SupportSQLiteDatabase db) {
-        final HashMap<String, TableInfo.Column> _columnsMeetings = new HashMap<String, TableInfo.Column>(12);
+        final HashMap<String, TableInfo.Column> _columnsMeetings = new HashMap<String, TableInfo.Column>(13);
         _columnsMeetings.put("id", new TableInfo.Column("id", "INTEGER", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMeetings.put("title", new TableInfo.Column("title", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMeetings.put("description", new TableInfo.Column("description", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
@@ -119,6 +119,7 @@ public final class MeetingDatabase_Impl extends MeetingDatabase {
         _columnsMeetings.put("summary", new TableInfo.Column("summary", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMeetings.put("todos", new TableInfo.Column("todos", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMeetings.put("keywords", new TableInfo.Column("keywords", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsMeetings.put("autoStartRecording", new TableInfo.Column("autoStartRecording", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMeetings.put("createdAt", new TableInfo.Column("createdAt", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         final HashSet<TableInfo.ForeignKey> _foreignKeysMeetings = new HashSet<TableInfo.ForeignKey>(0);
         final HashSet<TableInfo.Index> _indicesMeetings = new HashSet<TableInfo.Index>(0);
@@ -161,7 +162,7 @@ public final class MeetingDatabase_Impl extends MeetingDatabase {
         }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "52bd2b5f5d630fc6dfd6ce3d395026ee", "4fa63c1fb9163242dfb418ddc018f58a");
+    }, "714c25490a7fd427f096734492e552b7", "6433f332983c4776cba9a16e8582f68f");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;
